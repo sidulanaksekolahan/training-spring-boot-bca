@@ -1,0 +1,556 @@
+# minikube start --driver=docker --cpus=<number_of_cpus> --memory=<amount_of_memory>
+minikube start --driver=docker --cpus=4 --memory=8g
+
+# 1. pastikan minikube jalan
+minikube start
+
+
+
+# 2. buat namespaces
+kubectl apply -f namespaces.yaml
+
+Perintah kubectl apply -f namespaces.yaml digunakan untuk menerapkan konfigurasi yang ada dalam file namespaces.yaml ke dalam cluster Kubernetes. 
+Dalam konteks file yang Anda berikan, perintah ini akan membuat namespace baru bernama prod di dalam cluster Kubernetes jika belum ada, atau memperbarui konfigurasi namespace tersebut jika sudah ada. 
+Dengan kata lain, perintah ini akan memastikan bahwa namespace prod ada di cluster sesuai dengan definisi di file YAML Anda.
+
+Cara cek namespace:
+kubectl get namespaces
+
+Kalau mau cek lebih detail:
+kubectl describe namespace <namespace name>
+
+contoh:
+kubectl describe namespace hello-kubernetes
+
+
+
+# 3. buat secrets (contoh prod)
+kubectl apply -f secret-postgres-prod.yaml
+
+Perintah kubectl apply -f secret-postgres-prod.yaml akan menerapkan konfigurasi Secret Kubernetes yang ada dalam file secret-postgres-prod.yaml ke dalam cluster.
+
+Secara spesifik, perintah ini akan:
+1. Membuat atau memperbarui Secret bernama postgres-credentials di namespace prod.
+2. Secret ini berisi data yang dienkode dalam base64
+
+Secret ini biasanya digunakan untuk menyimpan informasi sensitif seperti username, password, dan nama database yang akan digunakan oleh aplikasi atau layanan di dalam cluster Kubernetes.
+
+
+
+# 4. buat configmaps & logback
+kubectl apply -f configmaps.yaml
+kubectl apply -f logback-configmap.yaml
+
+Perintah kubectl apply -f configmaps.yaml akan menerapkan konfigurasi ConfigMap yang ada dalam file configmaps.yaml ke dalam cluster Kubernetes.
+
+Secara spesifik, perintah ini akan:
+1. Membuat atau memperbarui ConfigMap bernama app-config-prod di namespace prod.
+2. ConfigMap ini berisi data konfigurasi aplikasi, yaitu isi dari application.properties yang berisi pengaturan berikut:
+spring.profiles.active=prod : Mengaktifkan profil Spring Boot prod.
+spring.datasource.url=jdbc:postgresql://postgresql-database-prod:5432/onedb_prod : URL koneksi ke database PostgreSQL.
+spring.datasource.username=postgres : Username untuk koneksi ke database.
+
+ConfigMap ini biasanya digunakan untuk menyimpan konfigurasi yang bisa diakses oleh aplikasi di dalam cluster tanpa menyimpan data sensitif seperti password (yang biasanya disimpan di Secret).
+
+Perintah kubectl apply -f logback-configmap.yaml akan menerapkan konfigurasi ConfigMap yang ada dalam file logback-configmap.yaml ke dalam cluster Kubernetes.
+
+Secara spesifik, perintah ini akan:
+1. Membuat atau memperbarui ConfigMap bernama logback-config di namespace prod.
+2. ConfigMap ini berisi konfigurasi logging untuk aplikasi, berupa file logback-spring.xml yang mendefinisikan pengaturan log:
+Menggunakan konfigurasi Logback untuk logging berbasis Logstash.
+Mengatur agar log disimpan dalam file /var/log/app/application.log.
+Menggunakan rolling policy berdasarkan waktu, dengan maksimal penyimpanan 30 hari log.
+Log akan diformat dalam format JSON yang cocok untuk Logstash (LogstashEncoder).
+Tingkat logging root diatur ke INFO.
+
+
+
+# 5. deploy postgres
+kubectl apply -f postgres-statefulset-prod.yaml
+
+
+
+# 6. deploy apps
+kubectl apply -f discovery-prod.yaml
+kubectl apply -f api-gateway-prod.yaml
+kubectl apply -f product-service-prod.yaml
+
+
+
+# 7. HPA
+kubectl apply -f hpa-product-prod.yaml
+
+
+
+# 8. cek resources
+kubectl -n prod get pods,svc,deploy,sts,hpa
+
+
+
+# 9. lihat logs in JSON form:
+kubectl -n prod logs -l app=product-service -f
+
+
+===============================================================================================
+
+Untuk **mengakses `discovery-service` dari host (Windows/Linux/macOS)**, kamu punya beberapa opsi. Karena ini di **Minikube**, service tipe **ClusterIP** memang **tidak akan punya External IP** — itu normal.
+
+Berikut cara-caranya, dari yang paling mudah:
+
+---
+
+# ✅ **1. Gunakan `minikube service` (cara paling mudah)**
+
+Walaupun service-nya *ClusterIP*, Minikube bisa membuat tunnel otomatis.
+
+Jalankan:
+
+```bash
+minikube -n prod service discovery-service
+```
+
+Minikube akan membuka browser atau menampilkan URL:
+
+```
+http://127.0.0.1:xxxxx
+```
+
+➡️ Kamu bisa akses dari host pakai URL tersebut.
+
+---
+
+# ✅ **2. Gunakan `kubectl port-forward`**
+
+Cara manual untuk mem-forward port dalam namespace **prod**.
+
+```bash
+kubectl -n prod port-forward service/discovery-service 8761:8761
+```
+
+Setelah itu akses:
+
+```
+http://localhost:8761
+```
+
+➡️ Ini paling sering dipakai untuk debugging.
+
+---
+
+# ✅ **3. Ubah service menjadi NodePort (rekomendasi untuk akses dari host)**
+
+Karena kamu ingin mengakses dari host **secara permanen**, ubah servicenya:
+
+### Edit servicenya:
+
+```bash
+kubectl -n prod edit svc discovery-service
+```
+
+Ubah:
+
+```yaml
+type: ClusterIP
+```
+
+menjadi:
+
+```yaml
+type: NodePort
+```
+
+Set port:
+
+```yaml
+ports:
+  - port: 8761
+    targetPort: 8761
+    nodePort: 30061   # contoh bebas 30000-32767
+```
+
+Simpan.
+
+Lalu cek:
+
+```bash
+minikube ip
+```
+
+Misal output:
+
+```
+192.168.49.2
+```
+
+Akses dari host:
+
+```
+http://192.168.49.2:30061
+```
+
+---
+
+# 🧐 **Kenapa EXTERNAL-IP kosong (<pending>)?**
+
+Karena:
+
+* Kamu pakai Minikube dengan driver **Docker**
+* LoadBalancer membutuhkan **cloud provider** (GCP, AWS, Azure)
+* Minikube bukan cloud → tidak bisa buat external load balancer
+
+Solusinya: gunakan **minikube tunnel**.
+
+---
+
+# ✅ **4. Gunakan `minikube tunnel` untuk layanan LoadBalancer**
+
+Jika kamu ingin membuat LoadBalancer tetap:
+
+```bash
+minikube tunnel
+```
+
+Biarkan terminal ini berjalan (harus pakai sudo di Linux).
+
+---
+
+# 📌 **Rekomendasi untuk kamu**
+
+Untuk `discovery-service`, cukup pakai **NodePort** atau **port-forward**.
+
+Untuk production Kubernetes nanti (bukan Minikube), LoadBalancer baru akan muncul EXTERNAL-IP.
+
+---
+
+Kalau mau, saya bisa bantu generate YAML **service discovery-service versi NodePort**. Mau?
+
+
+==========================================================================================================
+
+Perintah-perintah Dasar Minikube
+Berikut adalah perintah-perintah inti untuk mengelola siklus hidup klaster minikube Anda.
+Perintah 	Deskripsi
+minikube start	Memulai klaster Kubernetes lokal.
+minikube delete	Menghapus klaster minikube.
+minikube stop	Menghentikan klaster minikube yang sedang berjalan.
+1. minikube start (Mulai) 
+Perintah ini digunakan untuk memulai atau membuat klaster minikube baru. Ini akan menyiapkan mesin virtual (VM) atau kontainer yang menjalankan klaster Kubernetes.
+Penggunaan Dasar:
+bash
+minikube start
+Gunakan kode dengan hati-hati.
+
+Opsi Umum:
+Menentukan driver (misalnya Docker, VirtualBox):
+bash
+minikube start --driver=docker
+Gunakan kode dengan hati-hati.
+
+Menentukan jumlah CPU atau memori:
+bash
+minikube start --cpus=4 --memory=4096mb
+Gunakan kode dengan hati-hati.
+
+Menentukan versi Kubernetes tertentu:
+bash
+minikube start --kubernetes-version v1.28.0
+Gunakan kode dengan hati-hati.
+
+ 
+2. minikube delete (Hapus) 
+Perintah ini digunakan untuk menghapus klaster minikube. Ini akan menghentikan VM atau kontainer dan menghapus semua data serta konfigurasinya.
+Penggunaan Dasar:
+bash
+minikube delete
+Gunakan kode dengan hati-hati.
+
+Opsi Umum:
+Menghapus klaster tertentu (jika Anda memiliki beberapa profil):
+bash
+minikube delete --profile=<nama-profil>
+Gunakan kode dengan hati-hati.
+
+Menghapus semua klaster dan membersihkan semua file konfigurasi (hati-hati):
+bash
+minikube delete --all --purge
+Gunakan kode dengan hati-hati.
+
+3. minikube stop (Henti)
+Perintah ini digunakan untuk menghentikan klaster minikube yang sedang berjalan tanpa menghapus konfigurasinya. Anda dapat memulainya kembali dengan cepat nanti.
+Penggunaan Dasar:
+bash
+minikube stop
+Gunakan kode dengan hati-hati.
+
+Perintah-perintah Terkait Lainnya
+Berikut adalah beberapa perintah minikube berguna lainnya untuk memantau, mengelola, dan berinteraksi dengan klaster Anda. 
+Status dan Informasi
+minikube status: Memeriksa status klaster minikube saat ini (sedang berjalan, dihentikan, dll.).
+bash
+minikube status
+Gunakan kode dengan hati-hati.
+
+minikube profile list: Menampilkan daftar semua klaster minikube (profil) yang telah Anda buat.
+bash
+minikube profile list
+Gunakan kode dengan hati-hati.
+
+minikube ip: Mendapatkan alamat IP dari klaster minikube.
+bash
+minikube ip
+Gunakan kode dengan hati-hati.
+
+Interaksi dan Manajemen
+minikube dashboard: Membuka dashboard web Kubernetes di browser default Anda.
+bash
+minikube dashboard
+Gunakan kode dengan hati-hati.
+
+minikube ssh: Membuka sesi SSH ke dalam VM minikube.
+bash
+minikube ssh
+Gunakan kode dengan hati-hati.
+
+minikube service: Menampilkan URL untuk mengakses aplikasi yang telah Anda deploy ke klaster.
+bash
+minikube service <nama-service>
+Gunakan kode dengan hati-hati.
+
+minikube addons: Mengelola addon (fitur tambahan) di minikube, seperti metrics server atau ingress controller.
+bash
+minikube addons list
+minikube addons enable metrics-server
+Gunakan kode dengan hati-hati.
+
+minikube logs: Menampilkan log dari klaster untuk membantu proses debugging.
+bash
+minikube logs
+Gunakan kode dengan hati-hati.
+
+ 
+Alat dan Versi
+minikube version: Menampilkan versi minikube yang terinstal di sistem Anda.
+bash
+minikube version
+Gunakan kode dengan hati-hati.
+
+minikube update-context: Memperbarui file konfigurasi kubeconfig Anda untuk memastikan kubectl terhubung ke klaster minikube yang benar. Biasanya ini berjalan otomatis setelah minikube start.
+bash
+minikube update-context
+Gunakan kode dengan hati-hati.
+
+===
+Jika proses benar‐benar tidak jalan:
+
+minikube delete --all --purge
+
+
+Lalu start ulang:
+
+minikube start --driver=docker --cpus=4
+
+====================================================================================================================================================
+================================================================ start awal ========================================================================
+====================================================================================================================================================
+Setelah minikube  berjalan, coba jalankan command dibawah ini:
+kubectl get nodes
+
+Harusnya muncul node minikube dengan status Ready.
+
+
+====================================================================================================================================================
+=================================================================Interaksi dan Manajemen============================================================
+====================================================================================================================================================
+Interaksi dan Manajemen
+minikube dashboard: Membuka dashboard web Kubernetes di browser default Anda.
+bash
+minikube dashboard
+
+====================================================================================================================================================
+=================================================================Untuk menghapus namespace yang sudah ada===========================================
+====================================================================================================================================================
+kubectl delete namespace <nama-namespace>
+
+
+====================================================================================================================================================
+=================================================================Load image dari host ke VM Minikube================================================
+====================================================================================================================================================
+minikube image load <image name:tag>
+
+check image yang sudah diload:
+minikube image ls
+
+====================================================================================================================================================
+==================================================================restart deployment================================================================
+====================================================================================================================================================
+kubectl -n hello-kubernetes-springboot delete pod -l app=spring-hello
+
+-l adalah singkatan dari --selector.
+
+Menghapus semua pod yang memiliki label:
+app=spring-hello
+
+di namespace:
+hello-kubernetes-springboot
+
+Deployment akan membuat Pod baru otomatis
+Pod baru akan memakai image yang sudah Anda load tadi
+
+===jalankan service menggunakan ip dinamis===
+minikube service spring-hello -n hello-kubernetes-springboot
+
+
+====================================================================================================================================================
+==========================================CARA MEMBUAT IP/JALUR AKSES JADI STATIS (RECOMMENDED)=====================================================
+====================================================================================================================================================
+minikube addons enable ingress
+
+-----------------------------
+minikube addons enable ingress
+* ingress is an addon maintained by Kubernetes. For any concerns contact minikube on GitHub.
+You can view the list of minikube maintainers at: https://github.com/kubernetes/minikube/blob/master/OWNERS
+* After the addon is enabled, please run "minikube tunnel" and your ingress resources would be available at "127.0.0.1"
+  - Using image registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.6.2
+  - Using image registry.k8s.io/ingress-nginx/controller:v1.13.2
+  - Using image registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.6.2
+* Verifying ingress addon...
+* The 'ingress' addon is enabled
+-------------------------------
+
+Setelah aktif, cek dengan:
+kubectl get pods -n ingress-nginx
+
+===Buat Ingress YAML===
+spring-hello-ingress.yaml:
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spring-hello-ingress
+  namespace: hello-kubernetes-springboot
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  rules:
+    - host: spring.local
+      http:
+        paths:
+          - path: /kube/?(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: spring-hello
+                port:
+                  number: 8080
+
+===Apply:===
+kubectl apply -f spring-hello-ingress.yaml
+
+
+===Update hosts file (STATIC FOREVER)===
+Di Windows edit:
+C:\Windows\System32\drivers\etc\hosts
+
+Dapatkan IP Minikube:
+minikube ip
+
+Tambahkan ip yang didapat dari command minikube ip sebelumnya, misalnya 192.168.49.2:
+192.168.49.2 springboot-hello-kubernetes.local
+
+===Pastikan Ingress sudah berjalan
+kubectl get ingress -n hello-kubernetes-springboot
+
+
+
+===check ingress untuk mapping ip di file hosts===
+kubectl -n hello-kubernetes-springboot get ingress spring-hello-ingress -o yaml
+
+
+===restart ingress-nginx:====
+kubectl delete pod -n ingress-nginx --all
+
+
+===check ip minikube===
+minikube ip
+
+
+===memeriksa service ingress-nginx-controller===
+kubectl get svc -n ingress-nginx
+
+===lihat log nginx===
+kubectl get pods -n ingress-nginx
+kubectl logs ingress-nginx-controller-9cc49f96f-88jqb -n ingress-nginx
+
+==================================
+====cara jalankan di ubuntu wsl===
+
+minikube service spring-hello --namespace=hello-kubernetes-springboot --url
+
+outputnya:
+http://127.0.0.1:34585
+❗  Because you are using a Docker driver on linux, the terminal needs to be open to run it.
+
+
+====lihat log pod===
+kubectl logs -f deployment/spring-hello -n hello-kubernetes-springboot
+
+
+=======================================================================
+===============================Port-forward============================
+kubectl port-forward service/spring-hello 8080:8080 -n hello-kubernetes
+
+lalu buka http://localhost:8080/api/v1/products/getAllProducts
+
+
+Jalankan command dibawah ini dan lihat dibagian PORT(S)
+kubectl get svc -n hello-kubernetes
+
+NAME           TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
+spring-hello   NodePort   10.107.193.255   <none>        8050:30080/TCP   35m
+
+Karena port yang diexpose disini adalah 8050:30080/TCP, maka untuk port forwardingnya seperti ini:
+kubectl port-forward service/spring-hello 8090:8050 -n hello-kubernetes
+
+alurnya: localhost:8090 -> spring-hello:8050 -> targetPort:8080(ini aplikasi spring boot)
+
+===menghapus PVC===
+kubectl delete pvc log-pvc
+
+==restart deployment===
+kubectl rollout restart deployment spring-hello -n hello-kubernetes
+
+===cek Pods log detail===
+kubectl describe pod -n hello-kubernetes
+
+===Cek Resource Node===
+kubectl describe node
+
+===lihat logback===
+kubectl exec -n hello-kubernetes -it pod/spring-hello-8886789c-pdc5x -- ls
+
+===cek PVC===
+kubectl get pvc -n hello-kubernetes
+
+===Lihat PV yang digunakan===
+kubectl get pv -n hello-kubernetes
+
+===login ke Minikube VM===
+minikube ssh
+
+===cek folder penyimpanan log===
+ls /data/logs/   # sesuai konfigurasi hostPath
+
+
+===
+Folder /data/logs tidak otomatis dibuat, meskipun kamu sudah mendeklarasikan hostPath di PersistentVolume. Kubernetes tidak menciptakan folder jika belum ada di Minikube VM.
+
+Jadi solusinya sangat sederhana:
+
+➡ Buat dulu folder hostPath-nya di dalam Minikube VM
+
+===Masih di dalam VM (hasil minikube ssh):
+sudo mkdir -p /data/logs
+sudo chmod 777 /data/logs
+
+Penjelasan:
+-p memastikan subfolder dibuat kalau belum ada
+chmod 777 supaya container punya akses read/write

@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-hello
+  namespace: hello-kubernetes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spring-hello
+  template:
+    metadata:
+      labels:
+        app: spring-hello
+    spec:
+      containers:
+        - name: spring-hello
+          image: spring-boot-hello-kubernetes:1.0.0
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: log-volume
+              mountPath: /logs
+          resources:
+            requests:
+              cpu: "100m" # 100m = 0.1 vCPU
+            limits:
+              cpu: "500m"
+      volumes:
+        - name: log-volume
+          persistentVolumeClaim:
+            claimName: log-pvc

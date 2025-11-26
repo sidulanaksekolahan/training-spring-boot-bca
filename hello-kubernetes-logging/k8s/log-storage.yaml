@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: log-pv
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /data/logs # File log akan disimpan fisik di dalam Minikube VM di /data/logs
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: log-pvc
+  namespace: hello-kubernetes
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

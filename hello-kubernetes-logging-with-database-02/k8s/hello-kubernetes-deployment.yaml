@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-hello
+  namespace: hello-kubernetes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spring-hello
+  template:
+    metadata:
+      labels:
+        app: spring-hello
+    spec:
+      containers:
+        - name: spring-hello
+          image: mirfanduri/hello-kubernetes-logging-with-database-02-kube:1.0.0
+          ports:
+            - containerPort: 8080
+          env:
+            - name: EUREKA_DEFAULT_ZONE
+              value: "http://discovery-service:8010/eureka/"
+            - name: DB_HOST
+              value: postgres
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: SPRING_PROFILES_ACTIVE
+          volumeMounts:
+            - name: log-volume
+              mountPath: /logs
+          resources:
+            requests:
+              cpu: "100m" # 100 millicores = 0.1 vCPU
+            limits:
+              cpu: "500m" # 500 millicores = 0.5 vCPU
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+      volumes:
+        - name: log-volume
+          persistentVolumeClaim:
+            claimName: log-pvc

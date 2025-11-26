@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: hello-kubernetes
+data:
+  SPRING_PROFILES_ACTIVE: prod
+# other non-sensitive config

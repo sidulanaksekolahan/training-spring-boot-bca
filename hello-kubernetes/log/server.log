@@ -1,0 +1,31 @@
+2025-11-21T20:47:58.659+07:00  INFO 25408 --- [hello-kubernetes] [main] c.e.one.HelloKubernetesApplication       : Starting HelloKubernetesApplication using Java 17.0.0.1 with PID 25408 (D:\project\kubernetes-01\hello-kubernetes\target\classes started by lenovo in D:\project\kubernetes-01\hello-kubernetes)
+2025-11-21T20:47:58.665+07:00  INFO 25408 --- [hello-kubernetes] [main] c.e.one.HelloKubernetesApplication       : No active profile set, falling back to 1 default profile: "default"
+2025-11-21T20:48:00.850+07:00  INFO 25408 --- [hello-kubernetes] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2025-11-21T20:48:00.861+07:00  INFO 25408 --- [hello-kubernetes] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-11-21T20:48:00.865+07:00  INFO 25408 --- [hello-kubernetes] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.48]
+2025-11-21T20:48:00.941+07:00  INFO 25408 --- [hello-kubernetes] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-11-21T20:48:00.942+07:00  INFO 25408 --- [hello-kubernetes] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 2209 ms
+2025-11-21T20:48:02.924+07:00  INFO 25408 --- [hello-kubernetes] [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 25 endpoints beneath base path '/actuator'
+2025-11-21T20:48:03.022+07:00  INFO 25408 --- [hello-kubernetes] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2025-11-21T20:48:03.036+07:00  INFO 25408 --- [hello-kubernetes] [main] c.e.one.HelloKubernetesApplication       : Started HelloKubernetesApplication in 5.097 seconds (process running for 5.541)
+2025-11-21T20:49:06.253+07:00  INFO 25408 --- [hello-kubernetes] [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-11-21T20:49:06.272+07:00  INFO 25408 --- [hello-kubernetes] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-11-21T20:49:06.277+07:00  INFO 25408 --- [hello-kubernetes] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 5 ms
+2025-11-21T20:49:06.403+07:00  INFO 25408 --- [hello-kubernetes] [http-nio-8080-exec-1] c.e.one.controller.ProductController     : getAllProducts
+2025-11-21T20:49:08.896+07:00  INFO 25408 --- [hello-kubernetes] [http-nio-8080-exec-2] c.e.one.controller.ProductController     : getAllProducts
+2025-11-21T20:49:17.849+07:00  INFO 25408 --- [hello-kubernetes] [SpringApplicationShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete
+2025-11-21T20:59:24.762+07:00  INFO 11908 --- [hello-kubernetes] [main] c.e.one.HelloKubernetesApplication       : Starting HelloKubernetesApplication using Java 17.0.0.1 with PID 11908 (D:\project\kubernetes-01\hello-kubernetes\target\classes started by lenovo in D:\project\kubernetes-01\hello-kubernetes)
+2025-11-21T20:59:24.764+07:00  INFO 11908 --- [hello-kubernetes] [main] c.e.one.HelloKubernetesApplication       : No active profile set, falling back to 1 default profile: "default"
+2025-11-21T20:59:26.482+07:00  INFO 11908 --- [hello-kubernetes] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2025-11-21T20:59:26.491+07:00  INFO 11908 --- [hello-kubernetes] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2025-11-21T20:59:26.491+07:00  INFO 11908 --- [hello-kubernetes] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.48]
+2025-11-21T20:59:26.539+07:00  INFO 11908 --- [hello-kubernetes] [main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2025-11-21T20:59:26.539+07:00  INFO 11908 --- [hello-kubernetes] [main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1737 ms
+2025-11-21T20:59:28.076+07:00  INFO 11908 --- [hello-kubernetes] [main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 25 endpoints beneath base path '/actuator'
+2025-11-21T20:59:28.161+07:00  INFO 11908 --- [hello-kubernetes] [main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8080 (http) with context path '/'
+2025-11-21T20:59:28.173+07:00  INFO 11908 --- [hello-kubernetes] [main] c.e.one.HelloKubernetesApplication       : Started HelloKubernetesApplication in 3.894 seconds (process running for 4.146)
+2025-11-21T20:59:42.233+07:00  INFO 11908 --- [hello-kubernetes] [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2025-11-21T20:59:42.234+07:00  INFO 11908 --- [hello-kubernetes] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2025-11-21T20:59:42.239+07:00  INFO 11908 --- [hello-kubernetes] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 3 ms
+2025-11-21T20:59:42.336+07:00  INFO 11908 --- [hello-kubernetes] [http-nio-8080-exec-1] c.e.one.controller.ProductController     : getAllProducts
+2025-11-21T20:59:46.506+07:00  INFO 11908 --- [hello-kubernetes] [SpringApplicationShutdownHook] o.s.b.w.e.tomcat.GracefulShutdown        : Commencing graceful shutdown. Waiting for active requests to complete

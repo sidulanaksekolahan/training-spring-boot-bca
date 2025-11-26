@@ -1,0 +1,31 @@
+# Maven commands:
+1. mvn clean -> cleans up artifacts created by prior builds
+2. mvn package -> take the compiled code and package it in its distributable format, such as a JAR.
+3. mvn install -> install the package into the local repository, for use as a dependency in other projects locally
+
+# Generate jar file menggunakan mvn package atau mvn install
+
+# Buat Dockerfile
+FROM eclipse-temurin:17-jdk
+COPY target/discovery-service-0.0.1-SNAPSHOT.jar /app/discovery-service.jar
+WORKDIR /app
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "discovery-service.jar"]
+
+# Build docker image
+docker build -t mirfanduri/discovery-service:1.0.0 .
+
+# Push image ke Docker Hub 
+docker push mirfanduri/discovery-service:1.0.0
+
+# Check list docker image
+docker images
+
+# Start container
+docker run -d --name=discovery-service -p 8010:8010 discovery-service:1.0.0
+
+# Check container yang sedang berjalan
+docker ps
+
+# Jalankan app menggunakan file jar
+java -jar .\target\discovery-service-0.0.1-SNAPSHOT.jar
