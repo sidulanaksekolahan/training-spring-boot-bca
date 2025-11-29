@@ -1,4 +1,4 @@
-Siap! Kita akan **setup Horizontal Pod Autoscaler (HPA)** supaya Pod Spring Boot kamu bisa naik-turun jumlahnya **secara otomatis** berdasarkan beban CPU/memori. 🚀
+Kita akan **setup Horizontal Pod Autoscaler (HPA)** supaya Pod Spring Boot kamu bisa naik-turun jumlahnya **secara otomatis** berdasarkan beban CPU/memori. 🚀
 
 Agar jelas, saya bagi step-by-step untuk Minikube:
 
@@ -101,6 +101,35 @@ Cek status:
 kubectl get hpa -n hello-kubernetes
 ```
 
+## ⚙️ 3.1 Buat hpa-api-gateway.yaml
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-gateway-hpa
+  namespace: hello-kubernetes
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-gateway
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+```
+Apply:
+
+```bash
+kubectl apply -f hpa-api-gateway.yaml
+```
+
 ---
 
 ## 🔥 4. Simulasi Beban (stress test)
@@ -112,6 +141,19 @@ kubectl run load-generator \
   -n hello-kubernetes \
   --image=busybox \
   -- /bin/sh -c "while true; do wget -q -O- http://spring-hello:8050; done"
+```
+
+Atau masuk shell:
+```bash
+kubectl run -it load-generator --image=busybox --restart=Never -n hello-kubernetes -- /bin/sh
+```
+Setelah masuk shell:
+```bash
+while true; do wget -q -O- http://api-gateway:8030/hello-kubernetes/api/v1/products/getAllProducts; done
+```
+Cek apakah HPA mulai scale:
+```bash
+kubectl get hpa -n hello-kubernetes -w
 ```
 
 → HPA harus mulai scale Pod naik beberapa menit kemudian:
@@ -156,10 +198,3 @@ Kalau mau Production-like:
 ✔ Gunakan **Prometheus + Grafana** untuk monitoring
 
 ---
-
-Kalau kamu kirim YAML Deployment dan Service kamu sekarang, saya bisa:
-🔹 Periksa apakah sudah sesuai
-🔹 Bantu sesuaikan dengan project Spring Boot kamu
-🔹 Tambahkan logging dan pengaturan profile `dev/prod` kalau mau
-
-Mau saya bantu review file kamu?
