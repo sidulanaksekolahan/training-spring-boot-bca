@@ -157,9 +157,3 @@ Kalau mau Production-like:
 
 ---
 
-Kalau kamu kirim YAML Deployment dan Service kamu sekarang, saya bisa:
-🔹 Periksa apakah sudah sesuai
-🔹 Bantu sesuaikan dengan project Spring Boot kamu
-🔹 Tambahkan logging dan pengaturan profile `dev/prod` kalau mau
-
-Mau saya bantu review file kamu?
